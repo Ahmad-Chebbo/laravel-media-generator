@@ -2,9 +2,11 @@
 
 namespace AhmadChebbo\LaravelMediaGenerator\Commands;
 
+use AhmadChebbo\LaravelMediaGenerator\Services\ImageSources\DicebearImageSource;
 use AhmadChebbo\LaravelMediaGenerator\Services\MediaGeneratorService;
 use AhmadChebbo\LaravelMediaGenerator\Services\ModelGeneratorService;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
 class GenerateMediaCommand extends Command
@@ -12,8 +14,9 @@ class GenerateMediaCommand extends Command
     protected $signature = 'media:generate
                             {--model= : Fully qualified model class name}
                             {--count= : Number of images to generate}
-                            {--source : Image source (picsum, placeholder, unsplash, avatar)}
-                            {--collection : Media collection name}
+                            {--source= : Image source (picsum, placeholder, unsplash, avatar, dicebear)}
+                            {--dicebear-style= : DiceBear avatar style (only used when source=dicebear)}
+                            {--collection= : Media collection name}
                             {--concurrent=10 : Number of concurrent downloads}
                             {--batch-size= : Batch size for processing}
                             {--record-id= : ID of existing record to attach media to (optional)}
@@ -29,6 +32,10 @@ class GenerateMediaCommand extends Command
 
         // Get options
         $source = $this->option('source') ?: $this->askForSource();
+        $dicebearStyle = null;
+        if ($source === 'dicebear') {
+            $dicebearStyle = $this->option('dicebear-style') ?: $this->askForDicebearStyle();
+        }
         $count = (int) ($this->option('count') ?: $this->askForCount());
         $batchSize = $this->option('batch-size') ?: $this->askForBatchSize();
         $modelClass = $this->option('model') ?: $this->askForModel();
@@ -38,8 +45,8 @@ class GenerateMediaCommand extends Command
         $createRecord = $this->option('create-record');
 
         // Validate model
-        $modelClass = "App\\Models\\{$modelClass}";
-        if (! class_exists($modelClass)) {
+        $modelClass = $this->resolveModelClass($modelClass);
+        if ($modelClass === null) {
             $this->error("Model class '{$modelClass}' does not exist!");
 
             return 1;
@@ -70,6 +77,9 @@ class GenerateMediaCommand extends Command
         // Set up image source and command instance
         try {
             $service->setImageSource($source);
+            if ($source === 'dicebear' && $dicebearStyle !== null) {
+                $service->setDicebearStyle($dicebearStyle);
+            }
             $service->setCommand($this);
         } catch (\Exception $e) {
             $this->error('Error setting image source: '.$e->getMessage());
@@ -229,10 +239,11 @@ class GenerateMediaCommand extends Command
         $this->newLine();
 
         $sources = [
-            'unsplash' => '🌅 Unsplash - High-quality photos from photographers worldwide (Recommended)',
+            'dicebear' => '🎲 DiceBear - Unique deterministic avatar images (Recommended for avatars)',
             'picsum' => '🖼️ Picsum - Lorem Picsum for placeholder images (Fast)',
+            'unsplash' => '🌅 Unsplash - High-quality photos from photographers worldwide',
             'placeholder' => '📐 Placeholder.com - Simple placeholder images (Basic)',
-            'avatar' => '👤 Avatar - Random avatar images (Fast)',
+            // 'avatar' => '👤 Avatar - Random avatar images (Fast)',
         ];
 
         $source = $this->choice('Select image source for media generation:', $sources, 'picsum');
@@ -241,6 +252,56 @@ class GenerateMediaCommand extends Command
         $this->newLine();
 
         return $source;
+    }
+
+    private function askForDicebearStyle(): string
+    {
+        $this->info('🎨 DiceBear Style Selection');
+        $this->newLine();
+        $this->line('Choose an avatar style. Popular options:');
+        $this->line('  bottts, pixel-art, lorelei, adventurer, avataaars, micah, notionists, open-peeps');
+        $this->newLine();
+
+        $popularStyles = [
+            'bottts' => '🤖 Bottts - Cute robot avatars (Default)',
+            'pixel-art' => '🎮 Pixel Art - Retro pixel-style characters',
+            'lorelei' => '🧑 Lorelei - Illustrated person avatars',
+            'adventurer' => '⚔️  Adventurer - Fantasy character avatars',
+            'avataaars' => '😊 Avataaars - Cartoon face builder avatars',
+            'micah' => '🎨 Micah - Illustrated face avatars',
+            'notionists' => '📝 Notionists - Notion-style doodle avatars',
+            'open-peeps' => '🧍 Open Peeps - Hand-drawn people avatars',
+            'identicon' => '🔷 Identicon - Abstract geometric patterns',
+            'thumbs' => '👍 Thumbs - Cute thumb characters',
+            'fun-emoji' => '😄 Fun Emoji - Playful emoji-style avatars',
+            'shapes' => '🔶 Shapes - Abstract shape avatars',
+            'custom' => '⌨️  Other - Enter a custom style name',
+        ];
+
+        $choice = $this->choice(
+            'Select a DiceBear style:',
+            $popularStyles,
+            'bottts'
+        );
+
+        if ($choice === 'custom') {
+            $this->newLine();
+            $this->line('Available styles: '.implode(', ', DicebearImageSource::AVAILABLE_STYLES));
+            $this->newLine();
+            $style = $this->ask('Enter the DiceBear style name', DicebearImageSource::DEFAULT_STYLE);
+
+            if (! in_array($style, DicebearImageSource::AVAILABLE_STYLES, true)) {
+                $this->warn("Style '{$style}' is not in the known styles list. Falling back to default: ".DicebearImageSource::DEFAULT_STYLE);
+                $style = DicebearImageSource::DEFAULT_STYLE;
+            }
+        } else {
+            $style = $choice;
+        }
+
+        $this->info("✅ Selected DiceBear style: {$style}");
+        $this->newLine();
+
+        return $style;
     }
 
     private function askForCollection(): string
@@ -536,5 +597,29 @@ class GenerateMediaCommand extends Command
         $this->newLine();
 
         return null;
+    }
+
+    private function resolveModelClass(string $modelClass): ?string
+    {
+        $modelClass = trim($modelClass, " \t\n\r\0\x0B\\\"'");
+        $modelClass = preg_replace('/\.php$/i', '', $modelClass);
+
+        if (! str_contains($modelClass, '\\')) {
+            $modelClass = "App\\Models\\{$modelClass}";
+        }
+
+        if (! class_exists($modelClass)) {
+            $this->error("Model class '{$modelClass}' does not exist!");
+
+            return null;
+        }
+
+        if (! is_subclass_of($modelClass, Model::class)) {
+            $this->error("Class '{$modelClass}' is not an Eloquent model!");
+
+            return null;
+        }
+
+        return $modelClass;
     }
 }

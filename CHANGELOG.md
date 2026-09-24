@@ -21,3 +21,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Database activity logging via `MediaGenerationLog` and migration.
 - Programmatic API via `MediaGeneratorService`, `ModelGeneratorService`, and `MediaGenerator` facade.
 - Support for PHP 8.1 through 8.5 and Laravel 10, 11, 12, and 13.
+
+## [1.0.2] - 2026-09-24
+
+### Added
+- New **DiceBear** image source (`DicebearImageSource`) using the [DiceBear HTTP API](https://www.dicebear.com/how-to-use/http-api/) (v10.x).
+  - Generates deterministic raster avatars (JPG) with a seed derived from the image index.
+  - Supports all 61 official DiceBear styles (e.g. `bottts`, `pixel-art`, `lorelei`, `avataaars`). Default style: `bottts`.
+  - Style is configurable via `config/media-generator.php` (`sources.dicebear.style`) or interactively at command runtime.
+- `--dicebear-style=` option on `php artisan media:generate` to specify the style without interaction.
+- `askForDicebearStyle()` interactive style picker in `GenerateMediaCommand` with 12 popular presets and a free-text fallback.
+- `MediaGeneratorService::setDicebearStyle(string $style)` for programmatic style overriding.
+
+## [1.0.1] - 2026-09-24
+
+### Fixed
+- Model class validation and resolution by adding a new method `resolveModelClass` to the `GenerateMediaCommand` class.

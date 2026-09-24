@@ -1,6 +1,7 @@
 <?php
 
 use AhmadChebbo\LaravelMediaGenerator\Services\ImageSources\AvatarImageSource;
+use AhmadChebbo\LaravelMediaGenerator\Services\ImageSources\DicebearImageSource;
 use AhmadChebbo\LaravelMediaGenerator\Services\ImageSources\PicsumImageSource;
 use AhmadChebbo\LaravelMediaGenerator\Services\ImageSources\PlaceholderImageSource;
 use AhmadChebbo\LaravelMediaGenerator\Services\ImageSources\UnsplashImageSource;
@@ -52,6 +53,14 @@ return [
         'avatar' => [
             'class' => AvatarImageSource::class,
             'base_url' => 'https://avatar.iran.liara.run/public',
+        ],
+        'dicebear' => [
+            'class' => DicebearImageSource::class,
+            'base_url' => 'https://api.dicebear.com',
+            // Avatar style — any of the 61 official DiceBear styles.
+            // See DicebearImageSource::AVAILABLE_STYLES for the full list.
+            'style' => 'bottts',
+            'api_version' => '10.x',
         ],
     ],
 

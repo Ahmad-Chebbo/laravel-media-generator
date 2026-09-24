@@ -4,6 +4,7 @@ namespace AhmadChebbo\LaravelMediaGenerator\Services;
 
 use AhmadChebbo\LaravelMediaGenerator\Contracts\ImageSourceInterface;
 use AhmadChebbo\LaravelMediaGenerator\Exceptions\MediaGeneratorException;
+use AhmadChebbo\LaravelMediaGenerator\Services\ImageSources\DicebearImageSource;
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise\Utils;
 use Illuminate\Console\Command;
@@ -42,6 +43,19 @@ class MediaGeneratorService
     public function setCommand(Command $command): self
     {
         $this->command = $command;
+
+        return $this;
+    }
+
+    /**
+     * Set the DiceBear style on the active image source.
+     * Only has an effect when the current source is DicebearImageSource.
+     */
+    public function setDicebearStyle(string $style): self
+    {
+        if ($this->imageSource instanceof DicebearImageSource) {
+            $this->imageSource->setStyle($style);
+        }
 
         return $this;
     }
