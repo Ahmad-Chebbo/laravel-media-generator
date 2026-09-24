@@ -176,6 +176,7 @@ $service->generateMedia([
 | `--model`      | Fully qualified model class name   | Required    |
 | `--count`      | Number of images to generate       | Interactive |
 | `--source`     | Image source (picsum, placeholder) | picsum      |
+| `--dicebear-style` | DiceBear style to use | bottts |
 | `--collection` | Media collection name              | default     |
 | `--concurrent` | Number of concurrent downloads     | 10          |
 | `--batch-size` | Batch size for processing          | 50          |

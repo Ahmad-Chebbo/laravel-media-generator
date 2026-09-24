@@ -393,7 +393,7 @@ class GenerateMediaCommand extends Command
 
     private function askForRecordId(string $modelClass): ?int
     {
-        $modelClass = "App\\Models\\{$modelClass}";
+        $modelClass = $this->resolveModelClass($modelClass);
         $model = new $modelClass;
 
         // Get total count for better UX

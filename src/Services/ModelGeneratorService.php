@@ -4,6 +4,7 @@ namespace AhmadChebbo\LaravelMediaGenerator\Services;
 
 use AhmadChebbo\LaravelMediaGenerator\Exceptions\MediaGeneratorException;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 class ModelGeneratorService
@@ -294,7 +295,9 @@ class ModelGeneratorService
      */
     public function validateModelUsesMediaLibrary(string $modelClass): void
     {
-        if (! class_exists($modelClass)) {
+        $modelClass = $this->resolveModelClass($modelClass);
+
+        if ($modelClass === null) {
             throw new MediaGeneratorException("Model class '{$modelClass}' does not exist.");
         }
 
@@ -335,5 +338,25 @@ class ModelGeneratorService
         }
 
         return $record;
+    }
+
+    private function resolveModelClass(string $modelClass): ?string
+    {
+        $modelClass = trim($modelClass, " \t\n\r\0\x0B\\\"'");
+        $modelClass = preg_replace('/\.php$/i', '', $modelClass);
+
+        if (! str_contains($modelClass, '\\')) {
+            $modelClass = "App\\Models\\{$modelClass}";
+        }
+
+        if (! class_exists($modelClass)) {
+            return null;
+        }
+
+        if (! is_subclass_of($modelClass, Model::class)) {
+            return null;
+        }
+
+        return $modelClass;
     }
 }
